@@ -70,8 +70,12 @@ function play(p: Puzzle, origin: 'default' | 'saved' | 'shared') {
     showModal(`<p class="kicker">Town complete!</p><p class="final">${esc(solution(nodes))}</p>
       <div class="bigscore">${Math.max(score, 0)}<small>/ ${START}</small></div><p class="rank">Rank: <b>${rank}</b></p>
       <p class="muted">${wrong} wrong · ${[...hinted.keys()].length} hints · ${revealed.size} reveals</p>
-      <div class="row"><button class="btn primary" data-m="close">Admire it</button><a class="btn ghost" href="#/editor">Make your own</a></div>`);
+      <div class="row"><button class="btn primary" data-m="share">Share result</button><button class="btn ghost" data-m="close">Close</button><a class="btn ghost" href="#/editor">Make your own</a></div>`);
     modal.querySelector('[data-m=close]')!.addEventListener('click', closeModal);
+    modal.querySelector('[data-m=share]')!.addEventListener('click', () => {
+      const text = `Bracket Town — ${p.title}\nScore ${Math.max(score, 0)}/${START} · ${rank}\n${origin === 'default' ? location.href.split('#')[0] : shareUrl(p)}`;
+      if (navigator.share) navigator.share({ text }).catch(() => {}); else copy(text, 'Result copied');
+    });
   }
   function submit() {
     if (done) return; const g = norm(input.value); if (!g) return;
@@ -190,5 +194,12 @@ function route() {
   else if (a === 'play' && b) { const p = load().find(x => x.id === b); p ? play(p, 'saved') : (location.hash = '#/'); }
   else play(DEFAULT, 'default');
 }
+document.getElementById('helpbtn')?.addEventListener('click', () => {
+  showModal(`<p class="kicker">How to play</p><h2 class="htitle">Solve the sentence from the inside out.</h2>
+    <ul class="howto"><li>Each <b>[bracketed clue]</b> hides a word or phrase.</li><li>Only the innermost clues can be solved — they're highlighted. Tap one, type the answer, press Enter.</li>
+    <li>Solved answers fill in and unlock the clues around them.</li><li>You start with ${START} points: wrong guess −${WRONG}, hint −${HINT}, reveal −${REVEAL}.</li></ul>
+    <div class="row"><button class="btn primary" data-m="close">Got it</button></div>`);
+  modal.querySelector('[data-m=close]')!.addEventListener('click', closeModal);
+});
 addEventListener('hashchange', route); route();
 if ('serviceWorker' in navigator && import.meta.env.PROD) navigator.serviceWorker.register('./sw.js').catch(() => {});
