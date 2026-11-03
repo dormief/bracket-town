@@ -34,7 +34,7 @@ function play(p: Puzzle) {
     <p class="hint-line"></p>
     <div class="actions"><button class="btn ghost sm" data-a="restart">Start over</button></div>
   </section>
-  <div class="dock"><div class="assist" role="group" aria-label="Clue help"><button type="button" class="chipbtn" data-a="hint">Nudge a letter <small>−${HINT}</small></button><button type="button" class="chipbtn" data-a="reveal">Show this answer <small>−${REVEAL}</small></button></div><form class="answerbar" autocomplete="off"><input class="ans" type="text" enterkeyhint="go" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Type an answer…" aria-label="Answer"><button class="btn primary" type="submit">Go</button></form></div>`;
+  <div class="dock"><div class="hintpop hidden" role="dialog" aria-modal="false" aria-labelledby="hp-q"><p class="hp-q" id="hp-q"></p><div class="hp-opts"><button type="button" class="btn primary" data-a="hint">Use a hint <small>−${HINT}</small></button><button type="button" class="btn" data-a="reveal">Reveal answer <small>−${REVEAL}</small></button><button type="button" class="btn ghost" data-a="cancel">Not now</button></div></div><form class="answerbar" autocomplete="off"><input class="ans" type="text" enterkeyhint="go" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Type an answer…" aria-label="Answer"><button class="btn primary" type="submit">Go</button></form></div>`;
   const sentence = app.querySelector('.sentence') as HTMLElement, input = app.querySelector('.ans') as HTMLInputElement, bar = app.querySelector('.answerbar') as HTMLElement, dock = app.querySelector('.dock') as HTMLElement;
   const scoreEl = app.querySelector('.score')!, hintLine = app.querySelector('.hint-line')!;
 
@@ -80,15 +80,40 @@ function play(p: Puzzle) {
     else { score -= WRONG; wrong++; render(); bar.classList.remove('shake'); void bar.offsetWidth; bar.classList.add('shake'); input.select(); }
   }
   bar.addEventListener('submit', e => { e.preventDefault(); submit(); });
-  sentence.addEventListener('click', e => { const b = (e.target as HTMLElement).closest('.clue.active') as HTMLElement | null; if (b) { sel = +b.dataset.id!; render(); input.focus({ preventScroll: true }); } });
+  const vv = window.visualViewport;
+  const pop = app.querySelector('.hintpop') as HTMLElement; let popFor = -1;
+  const closePop = () => { pop.classList.add('hidden'); popFor = -1; };
+  function openPop(b: HTMLElement) {
+    const c = clues[sel]; if (!c || done) return; popFor = c.id;
+    const h = hinted.get(c.id) || 0, more = h < c.answer.length - 1;
+    pop.querySelector('.hp-q')!.textContent = more ? `Stuck on this one? A hint shows letter ${h + 1} of ${c.answer.length}.` : 'Only the full answer is left to reveal.';
+    (pop.querySelector('[data-a=hint]') as HTMLButtonElement).hidden = !more;
+    pop.classList.remove('hidden');
+    if (innerWidth >= 560) {
+      const r = b.getBoundingClientRect(), w = pop.offsetWidth, ph = pop.offsetHeight;
+      let top = r.bottom + 8; if (top + ph > (vv?.height ?? innerHeight) - 90) top = Math.max(8, r.top - ph - 8);
+      const d = dock.getBoundingClientRect();
+      pop.style.left = `${-d.left + Math.min(Math.max(8, r.left + r.width / 2 - w / 2), innerWidth - w - 8)}px`; pop.style.top = `${top - d.top}px`;
+    } else { pop.style.left = ''; pop.style.top = ''; }
+    (pop.querySelector('button:not([hidden])') as HTMLElement).focus({ preventScroll: true });
+  }
+  sentence.addEventListener('click', e => {
+    const b = (e.target as HTMLElement).closest('.clue.active') as HTMLElement | null; if (!b) return;
+    const id = +b.dataset.id!;
+    if (id === sel) { render(); openPop(sentence.querySelector(`[data-id="${id}"]`) as HTMLElement); }
+    else { closePop(); sel = id; render(); input.focus({ preventScroll: true }); }
+  });
+  document.addEventListener('pointerdown', e => { if (popFor < 0) return; const t = e.target as HTMLElement; if (!pop.contains(t) && !t.closest('.clue.active.sel')) closePop(); }, true);
   const onAct = (e: Event) => {
-    const a = (e.target as HTMLElement).closest('[data-a]')?.getAttribute('data-a'); const c = clues[sel];
-    if (a === 'hint' && c && !done) { const h = hinted.get(c.id) || 0; if (h < c.answer.length - 1) { hinted.set(c.id, h + 1); score -= HINT; } render(); }
-    if (a === 'reveal' && c && !done) { score -= REVEAL; solve(c, 'reveal'); }
+    const a = (e.target as HTMLElement).closest('[data-a]')?.getAttribute('data-a'); const c = clues[popFor >= 0 ? popFor : sel];
+    if (a === 'hint' && c && !done) { const h = hinted.get(c.id) || 0; if (h < c.answer.length - 1) { hinted.set(c.id, h + 1); score -= HINT; } sel = c.id; closePop(); render(); }
+    if (a === 'reveal' && c && !done) { closePop(); score -= REVEAL; solve(c, 'reveal'); }
+    if (a === 'cancel') closePop();
     if (a === 'restart' && confirm('Start this puzzle over? Your progress and score will be reset.')) play(p);
   };
-  app.querySelector('.actions')!.addEventListener('click', onAct); dock.querySelector('.assist')!.addEventListener('click', onAct);
+  app.querySelector('.actions')!.addEventListener('click', onAct); pop.addEventListener('click', onAct);
   const onKey = (e: KeyboardEvent) => {
+    if (popFor >= 0 && e.key === 'Escape') { closePop(); return; }
     if (!modal.classList.contains('hidden')) { if (e.key === 'Escape') closeModal(); return; }
     if ((e.key === 'Tab' && document.activeElement === input) || (e.altKey && /Arrow(Left|Right)/.test(e.key))) {
       const act = active(); if (!act.length) return; e.preventDefault();
@@ -98,8 +123,7 @@ function play(p: Puzzle) {
   };
   document.addEventListener('keydown', onKey);
   // keep the answer bar above the iOS keyboard
-  const vv = window.visualViewport;
-  const place = () => { if (!vv) return; const off = Math.max(0, window.innerHeight - vv.height - vv.offsetTop); dock.style.transform = `translateY(${-off}px)`; };
+  const place = () => { if (!vv) return; const off = Math.max(0, window.innerHeight - vv.height - vv.offsetTop); dock.style.transform = `translateY(${-off}px)`; if (popFor >= 0) closePop(); };
   vv?.addEventListener('resize', place); vv?.addEventListener('scroll', place);
   cleanupPlay = () => { document.removeEventListener('keydown', onKey); vv?.removeEventListener('resize', place); vv?.removeEventListener('scroll', place); };
   render();
@@ -109,7 +133,7 @@ function play(p: Puzzle) {
 document.getElementById('helpbtn')?.addEventListener('click', () => {
   showModal(`<p class="kicker">How to play</p><h2 class="htitle">Solve the sentence from the inside out.</h2>
     <ul class="howto"><li>Each <b>[bracketed clue]</b> hides a word or phrase.</li><li>Only the innermost clues can be solved — they're highlighted. Tap one, type the answer, press Enter.</li>
-    <li>Solved answers fill in and unlock the clues around them.</li><li>Stuck? <b>Nudge a letter</b> shows the next letter of the highlighted clue; <b>Show this answer</b> fills it in.</li><li>You start with ${START} points: wrong guess −${WRONG}, nudge −${HINT}, show answer −${REVEAL}.</li></ul>
+    <li>Solved answers fill in and unlock the clues around them.</li><li>Stuck? Tap the highlighted clue again to ask for help: <b>Use a hint</b> shows its next letter, <b>Reveal answer</b> fills it in. Tap outside to back out for free.</li><li>You start with ${START} points: wrong guess −${WRONG}, hint −${HINT}, reveal −${REVEAL}.</li></ul>
     <div class="row"><button class="btn primary" data-m="close">Got it</button></div>`);
   modal.querySelector('[data-m=close]')!.addEventListener('click', closeModal);
 });

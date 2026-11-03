@@ -28,9 +28,11 @@ button.clue.active:focus-visible{outline:2px solid var(--accent);outline-offset:
 .btn{appearance:none;border:1px solid var(--line);background:transparent;color:var(--ink);font:500 15px var(--sans);padding:9px 16px;min-height:44px;border-radius:999px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;touch-action:manipulation}
 .btn:hover{border-color:var(--ink)}.btn:active{transform:scale(.98)}.btn.primary{background:var(--ink);border-color:var(--ink);color:var(--paper)}.btn.danger{color:var(--accent)}.btn small{color:var(--muted);font-weight:400}.btn.sm{padding:6px 12px;font-size:14px;min-height:38px}
 .btn:focus-visible,input:focus-visible,textarea:focus-visible,.icon:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.dock{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--paper);will-change:transform}
-.assist{display:flex;justify-content:center;gap:8px;padding:8px 14px 0;border-top:1px solid var(--ink)}
-.chipbtn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:500 13px var(--sans);padding:6px 12px;min-height:36px;border-radius:999px;cursor:pointer;touch-action:manipulation}.chipbtn small{color:var(--muted)}.chipbtn:hover{border-color:var(--ink)}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--paper);will-change:transform;border-top:1px solid var(--ink)}
+.hintpop{position:absolute;left:0;right:0;bottom:100%;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-bottom:0;border-radius:14px 14px 0 0;padding:14px max(14px,env(safe-area-inset-right)) 12px max(14px,env(safe-area-inset-left));box-shadow:0 -10px 30px #0002;animation:rise .2s ease-out}
+.hintpop.hidden{display:none}.hp-q{margin:0 0 10px;font:italic 16px/1.4 var(--serif);text-align:center}
+.hp-opts{display:flex;flex-direction:column;gap:8px}.hp-opts .btn{width:100%;min-height:44px}.hp-opts .btn.primary small{color:var(--paper);opacity:.75}.hp-opts .btn.ghost{border-color:transparent;color:var(--muted)}
+@media(min-width:560px){.hintpop{position:fixed;bottom:auto;right:auto;width:300px;border-radius:10px;border-bottom:1px solid var(--line);box-shadow:0 12px 34px #0003}}
 .answerbar{position:relative;display:flex;gap:8px;padding:10px max(14px,env(safe-area-inset-right)) calc(10px + var(--sab)) max(14px,env(safe-area-inset-left));background:var(--paper)}
 .answerbar input{flex:1;min-width:0;font:17px var(--sans);padding:11px 14px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
 .answerbar input:focus{border-color:var(--ink);outline:none}.answerbar .btn{border-radius:6px;min-width:84px}
