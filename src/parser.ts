@@ -43,10 +43,5 @@ export const solution = (nodes: Node[]): string =>
 export const norm = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
 export const maxDepth = (cs: Clue[]) => Math.max(0, ...cs.map(c => c.depth));
 
-export const encode = (p: Puzzle) => btoa(unescape(encodeURIComponent(JSON.stringify({ t: p.title, s: p.source })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-export function decode(s: string): Puzzle {
-  const j = JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/')))));
-  return { title: String(j.t || 'Shared puzzle'), source: String(j.s) };
-}
 export const DEFAULT: Puzzle = { id: 'default', title: 'A Summer Trip',
   source: 'Last summer we flew to [city nicknamed the Big [fruit that keeps the [physician, informally|doctor] away|apple]|New York] to see the [monument holding a [source of light|torch] in the harbor|Statue of Liberty], then ate [round Italian dish topped with [melty dairy food|cheese]|pizza] in [Manhattan\'s [middle, or main|central] green space|Central Park].' };
